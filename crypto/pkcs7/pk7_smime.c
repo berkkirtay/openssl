@@ -220,7 +220,7 @@ int PKCS7_verify(PKCS7 *p7, STACK_OF(X509) *certs, X509_STORE *store,
     char *buf = NULL;
     int i, j = 0, k, ret = 0;
     BIO *p7bio = NULL;
-    BIO *tmpin = NULL, *tmpout = NULL;
+    BIO *tmpout = NULL;
     const PKCS7_CTX *p7_ctx;
 
     if (p7 == NULL) {
@@ -298,26 +298,14 @@ int PKCS7_verify(PKCS7 *p7, STACK_OF(X509) *certs, X509_STORE *store,
             /* Check for revocation status here */
         }
 
+
     /*
-     * Performance optimization: if the content is a memory BIO then store
-     * its contents in a temporary read only memory BIO. This avoids
-     * potentially large numbers of slow copies of data which will occur when
-     * reading from a read write memory BIO when signatures are calculated.
-     */
+     * Performance optimization is deprecated since it has no effect
+     * on current version and causes unnecessary occupation on memory.  
+    */
 
-    if (indata && (BIO_method_type(indata) == BIO_TYPE_MEM)) {
-        char *ptr;
-        long len;
-        len = BIO_get_mem_data(indata, &ptr);
-        tmpin = (len == 0) ? indata : BIO_new_mem_buf(ptr, len);
-        if (tmpin == NULL) {
-            ERR_raise(ERR_LIB_PKCS7, ERR_R_MALLOC_FAILURE);
-            goto err;
-        }
-    } else
-        tmpin = indata;
-
-    if ((p7bio = PKCS7_dataInit(p7, tmpin)) == NULL)
+    if ((p7bio = PKCS7_dataInit(p7, indata)) == NULL)
+        ERR_raise(ERR_LIB_PKCS7, PKCS7_R_INVALID_NULL_POINTER)
         goto err;
 
     if (flags & PKCS7_TEXT) {
